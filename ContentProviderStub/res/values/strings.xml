@@ -2,7 +2,9 @@
 <resources>
 
     <string name="app_name">ContentProviderStub</string>
-    <string name="action_settings">Settings</string>
-    <string name="hello_world">Hi world!</string>
+    <string name="action_populate_db">Populate DB</string>
+    <string name="action_clear_db">Clear DB</string>
+    <string name="app_title">Content Provider Stub</string>
+    <string name="descMovieBanner">Movie Banner</string>
 
 </resources>

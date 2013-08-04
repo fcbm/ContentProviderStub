@@ -50,9 +50,6 @@ public class TestContentProvider extends ContentProvider {
         // The MIME type of a single row.
     	public static final String CONTENT_MOVIES_ITEM_MIMETYPE = CONTENT_ANDROID_ITEM_TYPE + "/" + CONTENT_MOVIES_SUBTYPE;
         
-        // The default sort order for this table
-        public static final String MOVIES_DEFAULT_SORT_ORDER = "data COLLATE LOCALIZED ASC";
-
         // Column names
     	// public static final String COL_ID = "_id"; // _ID is inherited from BaseColumns
     	public static final String COL_TITLE = "title";
@@ -61,6 +58,9 @@ public class TestContentProvider extends ContentProvider {
     	public static final String COL_RATING = "rating";
     	public static final String COL_DATE = "date";
     	public static final String COL_BANNER = "_data";
+
+        // The default sort order for this table
+        public static final String MOVIES_DEFAULT_SORT_ORDER = COL_TITLE +"  COLLATE LOCALIZED ASC";
     }
 	
 	// Database metadata declarations
@@ -71,8 +71,8 @@ public class TestContentProvider extends ContentProvider {
 	// UriMatcher metadata declarations
 	// Provide a mechanism to identify all incoming Uri patterns
 	private static UriMatcher mMatcher;
-	private static final String PATTERN_SINGLE_ITEM = MoviesTable.TABLE_MOVIES;
-	private static final String PATTERN_DIRECTORY 	= MoviesTable.TABLE_MOVIES + "/#";
+	private static final String PATTERN_SINGLE_ITEM = MoviesTable.TABLE_MOVIES + "/#";
+	private static final String PATTERN_DIRECTORY 	= MoviesTable.TABLE_MOVIES;
 	private static final int TYPE_ID_SINGLE_ITEM 	= 1;
 	private static final int TYPE_ID_DIRECTORY 		= 2;
 	
@@ -246,6 +246,7 @@ public class TestContentProvider extends ContentProvider {
 		// set to null.
 		String nullColumnHack = null;
 
+		Log.d(TAG, "CV to insert: " + cv);
 		long aNewRowId = db.insert(MoviesTable.TABLE_MOVIES, nullColumnHack, cv);
 		if (aNewRowId <= 0)
 		{
@@ -253,7 +254,8 @@ public class TestContentProvider extends ContentProvider {
 		}
 
 		// Prepare return Uri
-		aRetUri = ContentUris.withAppendedId(MoviesTable.CONTENT_ID_URI_MOVIES, // Note that we use CONTENT_ID_URI_MOVIES and not CONTENT_URI_MOVIES
+		aRetUri = ContentUris.withAppendedId(MoviesTable.CONTENT_ID_URI_MOVIES, // Note that we use CONTENT_ID_URI_MOVIES 
+																				// and not CONTENT_URI_MOVIES - TODO: test this
 				aNewRowId);
 		
 		// Notify all observers that something has changed
@@ -326,7 +328,7 @@ public class TestContentProvider extends ContentProvider {
 		aRetCursor = queryBuilder.query(db, projection, selection, selectionArgs, groupBy, having, sortOrder);
 
 		// Tell the cursor what uri to watch, so it knows when its source data changes
-		// TODO: check if this is really needed, in PA4 this is not present
+		// TODO: check if this is really needed, in PAD4 this is not present
 		aRetCursor.setNotificationUri(getContext().getContentResolver(), uri);
 		return aRetCursor;
 	}
