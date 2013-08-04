@@ -3,6 +3,7 @@ package com.fcbm.contentproviderstub;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.HashMap;
 
 import android.content.ContentProvider;
 import android.content.ContentUris;
@@ -17,6 +18,7 @@ import android.database.sqlite.SQLiteQueryBuilder;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
+import android.provider.BaseColumns;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -24,62 +26,96 @@ public class TestContentProvider extends ContentProvider {
 
 	private static final String TAG = "TestContentProvider";
 
-	// TODO: create "contract" inner class
+    // Definition of the contract for the Movies table of our provider.
+    public static final class MoviesTable implements BaseColumns {
+
+        // This class cannot be instantiated
+        private MoviesTable() {}
+
+        // The table name offered by this provider
+        public static final String TABLE_MOVIES = "tablemovies";
+
+        // The content:// style URL for this table
+        public static final Uri CONTENT_URI_MOVIES =  Uri.parse("content://" + AUTHORITY + "/" + TABLE_MOVIES);
+
+        // The content URI base for a single row of data. Callers must, append a numeric row id to this Uri to retrieve a row
+        public static final Uri CONTENT_ID_URI_MOVIES = Uri.parse("content://" + AUTHORITY + "/" + TABLE_MOVIES + "/");
+
+    	// Mime Type declarations - used by ContentProvider.getType()
+    	private static final String CONTENT_ANDROID_TYPE = "vnd.android.cursor.dir";
+    	private static final String CONTENT_ANDROID_ITEM_TYPE = "vnd.android.cursor.item";
+    	private static final String CONTENT_MOVIES_SUBTYPE = "vnd.contentproviderstub.movies";
+        // The MIME type of DIR
+    	public static final String CONTENT_MOVIES_MIMETYPE = CONTENT_ANDROID_TYPE + "/" + CONTENT_MOVIES_SUBTYPE;
+        // The MIME type of a single row.
+    	public static final String CONTENT_MOVIES_ITEM_MIMETYPE = CONTENT_ANDROID_ITEM_TYPE + "/" + CONTENT_MOVIES_SUBTYPE;
+        
+        // The default sort order for this table
+        public static final String MOVIES_DEFAULT_SORT_ORDER = "data COLLATE LOCALIZED ASC";
+
+        // Column names
+    	// public static final String COL_ID = "_id"; // _ID is inherited from BaseColumns
+    	public static final String COL_TITLE = "title";
+    	public static final String COL_DIRECTOR = "director";
+    	public static final String COL_DESCRIPTION = "description";
+    	public static final String COL_RATING = "rating";
+    	public static final String COL_DATE = "date";
+    	public static final String COL_BANNER = "_data";
+    }
 	
 	// Database metadata declarations
 	public static final String AUTHORITY = "com.fcbm.contentproviderstub";
-	public static final String DATABASE_MOVIE = "dbmovie";
-	private static final int DATABASE_MOVIE_VERSION = 1;
-	public static final Uri CONTENT_URI = Uri.parse("content://" + AUTHORITY + "/" + DATABASE_MOVIE);
 	
-	// Mime Type declarations - used by ContentProvider.getType()
-	private static final String CONTENT_ANDROID_TYPE = "vnd.android.cursor.dir";
-	private static final String CONTENT_ANDROID_ITEM_TYPE = "vnd.android.cursor.item";
-	private static final String CONTENT_MOVIE_SUBTYPE = "vnd.contentproviderstub.movie";
-	public static final String CONTENT_MOVIE_MIMETYPE = CONTENT_ANDROID_TYPE + "/" + CONTENT_MOVIE_SUBTYPE;
-	public static final String CONTENT_MOVIE_ITEM_MIMETYPE = CONTENT_ANDROID_ITEM_TYPE + "/" + CONTENT_MOVIE_SUBTYPE;
 	
-	// Table specific metadata declarations
-	public static final String TABLE_MOVIE = "tablemovie";
-	public static final String COL_MOVIE_ID = "_id";
-	public static final String COL_MOVIE_TITLE = "title";
-	public static final String COL_MOVIE_DIRECTOR = "director";
-	public static final String COL_MOVIE_DESCRIPTION = "description";
-	public static final String COL_MOVIE_RATING = "rating";
-	public static final String COL_MOVIE_DATE = "date";
-	public static final String COL_MOVIE_BANNER = "_data";
 	
 	// UriMatcher metadata declarations
 	// Provide a mechanism to identify all incoming Uri patterns
 	private static UriMatcher mMatcher;
-	private static final String PATTERN_SINGLE_ITEM = "movies";
-	private static final String PATTERN_DIRECTORY 	= "movies/#";
+	private static final String PATTERN_SINGLE_ITEM = MoviesTable.TABLE_MOVIES;
+	private static final String PATTERN_DIRECTORY 	= MoviesTable.TABLE_MOVIES + "/#";
 	private static final int TYPE_ID_SINGLE_ITEM 	= 1;
 	private static final int TYPE_ID_DIRECTORY 		= 2;
+	
+	
+    // A projection map used to select columns from the database
+    private static final HashMap<String, String> mMoviesProjectionMap;
 	
 	static
 	{
 		mMatcher = new UriMatcher( UriMatcher.NO_MATCH );
-		mMatcher.addURI(AUTHORITY, PATTERN_SINGLE_ITEM, TYPE_ID_SINGLE_ITEM);;
-		mMatcher.addURI(AUTHORITY, PATTERN_DIRECTORY, TYPE_ID_DIRECTORY);;
+		mMatcher.addURI(AUTHORITY, PATTERN_SINGLE_ITEM, TYPE_ID_SINGLE_ITEM);
+		mMatcher.addURI(AUTHORITY, PATTERN_DIRECTORY, TYPE_ID_DIRECTORY);
+		
+        // Create and initialize projection map for all columns.  This is
+        // simply an identity mapping.
+		mMoviesProjectionMap = new HashMap<String, String>();
+		mMoviesProjectionMap.put(MoviesTable._ID, MoviesTable._ID);
+		mMoviesProjectionMap.put(MoviesTable.COL_TITLE, MoviesTable.COL_TITLE);
+		mMoviesProjectionMap.put(MoviesTable.COL_DIRECTOR, MoviesTable.COL_DIRECTOR);
+		mMoviesProjectionMap.put(MoviesTable.COL_DESCRIPTION, MoviesTable.COL_DESCRIPTION);
+		mMoviesProjectionMap.put(MoviesTable.COL_RATING, MoviesTable.COL_RATING);
+		mMoviesProjectionMap.put(MoviesTable.COL_DATE, MoviesTable.COL_DATE);
+		mMoviesProjectionMap.put(MoviesTable.COL_BANNER, MoviesTable.COL_BANNER);
 	}
 	
 	// SQLiteOpenHelper implementation
 	private static class DbHelper extends SQLiteOpenHelper
 	{
-		private static final String CREATE_STATEMENT = "CREATE TABLE " + TABLE_MOVIE + " ("
-				+ COL_MOVIE_ID + " INTEGER PRIMARY KEY," +
-				COL_MOVIE_TITLE + " TEXT," +
-				COL_MOVIE_DIRECTOR + " TEXT," +
-				COL_MOVIE_DESCRIPTION + " TEXT," +
-				COL_MOVIE_DATE + " INTEGER," +
-				COL_MOVIE_RATING + " INTEGER," +
-				COL_MOVIE_BANNER + " INTEGER)";
+		private static final String DATABASE_MOVIES = "movies.db";
+		private static final int DATABASE_MOVIES_VERSION = 1;
+		private static final String CREATE_STATEMENT = "CREATE TABLE " + MoviesTable.TABLE_MOVIES + " ("
+				+ MoviesTable._ID + " INTEGER PRIMARY KEY," +
+				MoviesTable.COL_TITLE + " TEXT NOT NULL," +
+				MoviesTable.COL_DIRECTOR + " TEXT," +
+				MoviesTable.COL_DESCRIPTION + " TEXT," +
+				MoviesTable.COL_DATE + " INTEGER," +
+				MoviesTable.COL_RATING + " INTEGER," +
+				MoviesTable.COL_BANNER + " INTEGER)";
 		
-		private static final String DROP_STATEMENT = "DROP TABLE IF EXISTS " + TABLE_MOVIE;
+		private static final String DROP_STATEMENT = "DROP TABLE IF EXISTS " + MoviesTable.TABLE_MOVIES;
 		
 		public DbHelper(Context context) {
-			super(context, DATABASE_MOVIE, null, DATABASE_MOVIE_VERSION);
+			super(context, DATABASE_MOVIES, null, DATABASE_MOVIES_VERSION);
 		}
 
 		@Override
@@ -91,10 +127,12 @@ public class TestContentProvider extends ContentProvider {
 		@Override
 		public void onCreate(SQLiteDatabase db) {
 			db.execSQL( CREATE_STATEMENT );
+			// TODO: consider when it's the case to create an index
+            //db.execSQL("CREATE INDEX moviesIndexTitle ON " + TABLE_MOVIES + "(" + COL_TITLE + ");");
 		}		
 	};
 	
-	private DbHelper mDbMovieHelper;	
+	private DbHelper mDbMoviesHelper;	
 	
 
 	// ContentProvider overridden methods
@@ -102,7 +140,8 @@ public class TestContentProvider extends ContentProvider {
 	@Override
 	public boolean onCreate() {
 		Log.d(TAG, "onCreate");
-		mDbMovieHelper = new DbHelper(getContext());
+		mDbMoviesHelper = new DbHelper(getContext());
+		// Assumes that any failures will be reported by a thrown exception.
 		return true;
 	}	
 	
@@ -113,14 +152,14 @@ public class TestContentProvider extends ContentProvider {
 		
 		switch (mMatcher.match(uri))
 		{
-		case TYPE_ID_DIRECTORY:
-			aRetVal = CONTENT_MOVIE_MIMETYPE;
-			break;
-		case TYPE_ID_SINGLE_ITEM:
-			aRetVal = CONTENT_MOVIE_ITEM_MIMETYPE;
-			break;
-		default:
-			throw new IllegalArgumentException("Unknown Uri: " + uri);
+			case TYPE_ID_DIRECTORY:
+				aRetVal = MoviesTable.CONTENT_MOVIES_MIMETYPE;
+				break;
+			case TYPE_ID_SINGLE_ITEM:
+				aRetVal = MoviesTable.CONTENT_MOVIES_ITEM_MIMETYPE;
+				break;
+			default:
+				throw new IllegalArgumentException("Unknown Uri: " + uri);
 		}
 		
 		return aRetVal;
@@ -130,28 +169,30 @@ public class TestContentProvider extends ContentProvider {
 	public int delete(Uri uri, String selection, String[] selectionArgs) 
 	{
 		Log.d(TAG, "delete");
+		
 		String aNewSelection;
 		switch ( mMatcher.match(uri)) {
-		case TYPE_ID_SINGLE_ITEM:
-			aNewSelection = COL_MOVIE_ID + "=" + uri.getPathSegments().get(1) + 
-				(TextUtils.isEmpty(selection) ? "" : " AND (" + selection + ")");
-			break;
-		case TYPE_ID_DIRECTORY:
-			aNewSelection = selection;
-			break;
-		default:
-			throw new IllegalArgumentException("Unknown Uri: " + uri);
+			case TYPE_ID_SINGLE_ITEM:
+				aNewSelection = MoviesTable._ID + "=" + uri.getPathSegments().get(1) + 
+					(TextUtils.isEmpty(selection) ? "" : " AND (" + selection + ")");
+				break;
+			case TYPE_ID_DIRECTORY:
+				aNewSelection = selection;
+				break;
+			default:
+				throw new IllegalArgumentException("Unknown Uri: " + uri);
 		}
 		
-		// To delete all rows we need to set "1" - Test this
+		// To delete all rows we need to set "1" - TODO: Test this
 		if (aNewSelection == null)
 		{
 			aNewSelection = "1";
 		}
 		
-		SQLiteDatabase db = mDbMovieHelper.getWritableDatabase();
-		int aRetVal = db.delete(TABLE_MOVIE, aNewSelection, selectionArgs);
+		SQLiteDatabase db = mDbMoviesHelper.getWritableDatabase();
+		int aRetVal = db.delete(MoviesTable.TABLE_MOVIES, aNewSelection, selectionArgs);
 
+		// Notify all observers that something has changed
 		getContext().getContentResolver().notifyChange(uri, null);
 		
 		return aRetVal;
@@ -164,41 +205,60 @@ public class TestContentProvider extends ContentProvider {
 		Uri aRetUri = null;
 		
 		// Validate Uri
-		if (mMatcher.match(uri) != TYPE_ID_SINGLE_ITEM)
+		if (mMatcher.match(uri) != TYPE_ID_DIRECTORY)
 		{
 			throw new IllegalArgumentException("Unknown Uri: " + uri);
 		}
-		
-		// Validate ContentValues : create it if null, and fill with default values
+
+		// Create a new ContentValue
+		ContentValues cv = null;
 		if (values == null)
 		{
-			values = new ContentValues();
+			cv = new ContentValues();
 		}
-		if (values.containsKey( COL_MOVIE_TITLE ) == false)
+		else
+		{
+			// Note we do a copy of "values" because we may need to
+			// change its content during the validation step below
+			cv = new ContentValues(values);
+		}
+		
+		// Validate ContentValues content
+		if (cv.containsKey( MoviesTable.COL_TITLE ) == false)
 		{
 			throw new SQLException("Failed to insert row because Movie Title is needed " + uri);
 		}
-		if (values.containsKey( COL_MOVIE_DIRECTOR ) == false)
+		if (cv.containsKey( MoviesTable.COL_DIRECTOR ) == false)
 		{
-			values.put(COL_MOVIE_TITLE, "DefaultDirector");
+			cv.put(MoviesTable.COL_DIRECTOR, "DefaultDirector");
 		}
 		// TODO: fill other default values..
 		
-		// Insert data into the database
-		SQLiteDatabase db = mDbMovieHelper.getWritableDatabase();
+		// TODO: Consider adding a method to check if an entry is already present, and return in case it is.
+		// Check whether there are better alternatives, such as playing with keys in the DB
 		
-		// Note the null value for the "null column hack"
-		long aNewRowId = db.insert(TABLE_MOVIE, null, values);
+		// Insert data into the database
+		SQLiteDatabase db = mDbMoviesHelper.getWritableDatabase();
+		
+		// To add empty rows to your database by passing in an empty 
+		// Content Values object you must use the null column hack
+		// parameter to specify the name of the column that can be 
+		// set to null.
+		String nullColumnHack = null;
+
+		long aNewRowId = db.insert(MoviesTable.TABLE_MOVIES, nullColumnHack, cv);
 		if (aNewRowId <= 0)
 		{
 			throw new SQLException("Failed to insert row into: " + uri);
 		}
 
 		// Prepare return Uri
-		aRetUri = ContentUris.withAppendedId(CONTENT_URI, aNewRowId);
+		aRetUri = ContentUris.withAppendedId(MoviesTable.CONTENT_ID_URI_MOVIES, // Note that we use CONTENT_ID_URI_MOVIES and not CONTENT_URI_MOVIES
+				aNewRowId);
 		
-		// Notify that something has changed
-		getContext().getContentResolver().notifyChange(aRetUri, null);
+		// Notify all observers that something has changed
+		getContext().getContentResolver().notifyChange(aRetUri, // Note that we use aRetUri and not uri 
+				null);
 		
 		return aRetUri;
 	}
@@ -208,24 +268,24 @@ public class TestContentProvider extends ContentProvider {
 	{
 		Log.d(TAG, "update");
 		int aRetUpdatedRows = 0;
-		
 		String aNewSelection;
+
 		switch ( mMatcher.match(uri)) {
-		case TYPE_ID_SINGLE_ITEM:
-			aNewSelection = COL_MOVIE_ID + "=" + uri.getPathSegments().get(1) + 
-				(TextUtils.isEmpty(selection) ? "" : " AND (" + selection + ")");
-			break;
-		case TYPE_ID_DIRECTORY:
-			aNewSelection = selection;
-			break;
-		default:
-			throw new IllegalArgumentException("Unknown Uri: " + uri);
+			case TYPE_ID_SINGLE_ITEM:
+				aNewSelection = MoviesTable._ID + "=" + uri.getPathSegments().get(1) + 
+					(TextUtils.isEmpty(selection) ? "" : " AND (" + selection + ")");
+				break;
+			case TYPE_ID_DIRECTORY:
+				aNewSelection = selection;
+				break;
+			default:
+				throw new IllegalArgumentException("Unknown Uri: " + uri);
 		}
 		
-		SQLiteDatabase db = mDbMovieHelper.getWritableDatabase();
-		aRetUpdatedRows = db.update(TABLE_MOVIE, values, aNewSelection, selectionArgs);
+		SQLiteDatabase db = mDbMoviesHelper.getWritableDatabase();
+		aRetUpdatedRows = db.update(MoviesTable.TABLE_MOVIES, values, aNewSelection, selectionArgs);
 
-		// Notify that something has changed
+		// Notify all observers that something has changed
 		getContext().getContentResolver().notifyChange(uri, null);
 
 		return aRetUpdatedRows;
@@ -239,19 +299,31 @@ public class TestContentProvider extends ContentProvider {
 		SQLiteQueryBuilder queryBuilder = new SQLiteQueryBuilder();
 		
 		switch ( mMatcher.match(uri)) {
-		case TYPE_ID_SINGLE_ITEM:
-			queryBuilder.setTables( TABLE_MOVIE );
-			queryBuilder.appendWhere( COL_MOVIE_ID + "=" + uri.getPathSegments().get(1) );
-			break;
-		case TYPE_ID_DIRECTORY:
-			queryBuilder.setTables( TABLE_MOVIE );
-			break;
-		default:
-			throw new IllegalArgumentException("Unknown Uri: " + uri);
+			// case SEARCH:
+			// 	TODO: add implementation to allow search queries
+			//	break;
+			case TYPE_ID_SINGLE_ITEM:
+				queryBuilder.setTables( MoviesTable.TABLE_MOVIES );
+				queryBuilder.setProjectionMap(mMoviesProjectionMap);			
+				queryBuilder.appendWhere( MoviesTable._ID + "=" + uri.getPathSegments().get(1));
+				break;
+			case TYPE_ID_DIRECTORY:
+				queryBuilder.setTables( MoviesTable.TABLE_MOVIES );
+				queryBuilder.setProjectionMap(mMoviesProjectionMap);			
+				break;
+			default:
+				throw new IllegalArgumentException("Unknown Uri: " + uri);
 		}
 		
-		SQLiteDatabase db = mDbMovieHelper.getReadableDatabase();
-		aRetCursor = queryBuilder.query(db, projection, selection, selectionArgs, null, null, sortOrder);
+        if (TextUtils.isEmpty(sortOrder)) {
+            sortOrder = MoviesTable.MOVIES_DEFAULT_SORT_ORDER;
+        }
+	
+		String groupBy = null;
+		String having = null;
+        
+		SQLiteDatabase db = mDbMoviesHelper.getReadableDatabase();
+		aRetCursor = queryBuilder.query(db, projection, selection, selectionArgs, groupBy, having, sortOrder);
 
 		// Tell the cursor what uri to watch, so it knows when its source data changes
 		// TODO: check if this is really needed, in PA4 this is not present
@@ -268,7 +340,10 @@ public class TestContentProvider extends ContentProvider {
 		
 		// Create a file object in the application's external files directory
 		String fDir = Environment.DIRECTORY_PICTURES;
-		File f = new File(getContext().getExternalFilesDir(fDir), rowId);
+		File f = new File(
+				getContext().getExternalFilesDir(fDir),
+				//getContext().getCacheDir()
+				rowId);
 		
 		if (!f.exists())
 		{
@@ -278,6 +353,7 @@ public class TestContentProvider extends ContentProvider {
 			} catch (IOException e)
 			{
 				Log.d(TAG, "Failed to create file: " + e.getMessage());
+				// TODO: return null?
 			}
 		}
 		
@@ -301,5 +377,20 @@ public class TestContentProvider extends ContentProvider {
 		// Return a Parcel File Descriptor that represents the file
 		return pfd;
 	}
+	
+	
+	// Methods to handle read/write from assets in the apk
+	
+    //@Override
+    //public AssetFileDescriptor openAssetFile(Uri uri, String mode) throws FileNotFoundException {
+    //	super.openAssetFile(uri, mode);
+    //}
+    
+    //@Override
+    //public void writeDataToPipe(ParcelFileDescriptor output, Uri uri, String mimeType, Bundle opts, InputStream args) {
+		// must implements PipeDataWriter<InputStream>
+    //}
+    
 
+	
 }
