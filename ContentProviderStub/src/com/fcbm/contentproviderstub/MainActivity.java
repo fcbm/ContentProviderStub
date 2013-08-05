@@ -9,9 +9,14 @@ import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.util.Log;
+import android.view.ContextMenu;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView.AdapterContextMenuInfo;
+import android.widget.ExpandableListView.ExpandableListContextMenuInfo;
 import android.widget.ListView;
+import android.widget.Toast;
 
 // This project is inspired to code from: PAD4, ProA4, LoaderThrottle.java
 
@@ -128,13 +133,89 @@ public class MainActivity extends FragmentActivity { // We extend FragmentActivi
         ListView lv = (ListView) findViewById( R.id.listView );
         lv.setAdapter(mSca);
         
+        registerForContextMenu(lv);
+        
         Bundle aLoaderArgs = new Bundle();
         aLoaderArgs.putStringArray(KEY_PROJECTION, projection);
         android.support.v4.app.LoaderManager lm = getSupportLoaderManager();
         lm.initLoader( mIdLoaderTitles, aLoaderArgs, mLoaderCb);
     }
 
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo)
+    {
+    	if (menuInfo instanceof AdapterContextMenuInfo)
+    	{
+    		Log.d(TAG, "AdapterContectMenuInfo");
+    	}
+    	else if (menuInfo instanceof ExpandableListContextMenuInfo)
+    	{
+    		Log.d(TAG, "ExpandableListContextMenuInfo");
+    	}
+    	else
+    	{
+    		Log.d(TAG, "ClassName " + menuInfo.getClass().getCanonicalName());
+    	}
+    	if (v.getId() == R.id.listView)
+    	{
+    		Log.d(TAG, "selectedListView");
+    		AdapterContextMenuInfo aCmi = (AdapterContextMenuInfo) menuInfo;
+    		Log.d(TAG, "position " + aCmi.position);
+    		Cursor c = (Cursor)mSca.getItem( aCmi.position );
+    		String title = c.getString( c.getColumnIndex( TestContentProvider.MoviesTable.COL_TITLE));
+    		Log.d(TAG, "Director: " + title);
+    		
+    		menu.setHeaderTitle( title );
+    		menu.add(Menu.NONE, 0, 0, "Show");
+    		menu.add(Menu.NONE, 1, 1, "Update");
+    		menu.add(Menu.NONE, 2, 2, "Delete");
+    	}
+    	else if (v.getId() == R.id.imgMovieBanner)
+    	{
+    		Log.d(TAG, "selectedImageView");
+    	}
+    	else if (v.getId() == R.id.txtMovieTitle)
+    	{
+    		Log.d(TAG, "selectedTitle");
+    	}
+    	else if (v.getId() == R.id.txtMovieDirector)
+    	{
+    		Log.d(TAG, "selectedDirector");
+    	}
+    	else
+    	{
+    		Log.d(TAG, "selected id " + v.getId());
+    	}
+    	
+    }
 
+    @Override
+    public boolean onContextItemSelected(MenuItem item)
+    {
+    	if (item.getItemId() == 0)
+    	{
+    		AdapterContextMenuInfo aCmi = (AdapterContextMenuInfo) item.getMenuInfo();
+    		Cursor c = (Cursor)mSca.getItem( aCmi.position );
+    		String title = c.getString( c.getColumnIndex( TestContentProvider.MoviesTable.COL_TITLE));    		
+
+    		Toast.makeText(this , "Show Item " + title, Toast.LENGTH_LONG).show();
+    	}
+    	else if (item.getItemId() == 1)
+    	{
+    		Toast.makeText(this , "Update Item", Toast.LENGTH_LONG).show();
+    	}
+    	else if (item.getItemId() == 2)
+    	{
+    		Toast.makeText(this , "Delete Item", Toast.LENGTH_LONG).show();
+    	}
+    	else
+    	{
+    		return super.onContextItemSelected(item);	
+    	}
+
+    	return true;
+    }
+    
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
