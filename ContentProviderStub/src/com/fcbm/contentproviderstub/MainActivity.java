@@ -207,6 +207,12 @@ public class MainActivity extends FragmentActivity { // We extend FragmentActivi
     	else if (item.getItemId() == 2)
     	{
     		Toast.makeText(this , "Delete Item", Toast.LENGTH_LONG).show();
+
+    		AdapterContextMenuInfo aCmi = (AdapterContextMenuInfo) item.getMenuInfo();
+    		Cursor c = (Cursor)mSca.getItem( aCmi.position );
+    		String movieId = c.getString( c.getColumnIndex( TestContentProvider.MoviesTable._ID));    		
+
+    		doDeleteItem(movieId);
     	}
     	else
     	{
@@ -257,13 +263,15 @@ public class MainActivity extends FragmentActivity { // We extend FragmentActivi
 						Log.i(TAG, "AsyncTask interrupted");
 						break;
 					}
-					StringBuilder sbTitle = new StringBuilder("Movie ");
-					sbTitle.append(c);
-					StringBuilder sbDirector = new StringBuilder("Director ");
-					sbDirector.append(c);
+					String aTitle = "Movie " + c;
+					String aDirector = "Director " + c;
+					
+					if (movieExists(aTitle, aDirector))
+						continue;
+					
 					ContentValues cv = new ContentValues();
-					cv.put(TestContentProvider.MoviesTable.COL_TITLE, sbTitle.toString());
-					cv.put(TestContentProvider.MoviesTable.COL_DIRECTOR, sbDirector.toString());
+					cv.put(TestContentProvider.MoviesTable.COL_TITLE, aTitle);
+					cv.put(TestContentProvider.MoviesTable.COL_DIRECTOR, aDirector);
 					
 					getContentResolver().insert(TestContentProvider.MoviesTable.CONTENT_URI_MOVIES, cv);
 					
@@ -278,6 +286,22 @@ public class MainActivity extends FragmentActivity { // We extend FragmentActivi
     	}.execute();
     }
 
+    // TODO: pass this parameter in AsyncTask.execute()
+    private void doDeleteItem(final String movieId)
+    {
+    	new AsyncTask<Void, Void, Void> ()
+    	{
+    		@Override
+    		protected Void doInBackground(Void... params)
+    		{
+    			String where = TestContentProvider.MoviesTable._ID + "=?";
+    			String selectionArgs[] = new String[] { movieId};
+    			getContentResolver().delete(TestContentProvider.MoviesTable.CONTENT_URI_MOVIES, where, selectionArgs);
+    			return null;
+    		}
+    	}.execute();
+    }
+    
     private void doClearDb()
     {
     	if (mPopulateTask != null)
@@ -295,6 +319,33 @@ public class MainActivity extends FragmentActivity { // We extend FragmentActivi
 				return null;
 			}
     	}.execute();
+    }
+    
+    private boolean movieExists(String title, String director)
+    {
+    	String sortOrder = null;
+    	String selection = TestContentProvider.MoviesTable.COL_TITLE + "=? AND " + 
+    			TestContentProvider.MoviesTable.COL_DIRECTOR + "=?";
+    	String selectionArgs[] = new String[] {title, director};
+    	Cursor c = null;
+    	boolean aBookFound = false;
+    	
+    	try
+    	{
+    		c = getContentResolver().query(
+    			TestContentProvider.MoviesTable.CONTENT_URI_MOVIES, 
+    			new String[] {TestContentProvider.MoviesTable._ID}, 
+    			selection, selectionArgs, sortOrder);
+        } finally {
+            if (c != null)
+            {
+            	aBookFound = c.getCount() > 0;
+            	Log.d(TAG, "Movie " + title + " found: " + aBookFound);
+            	c.close();
+            }
+        }
+
+    	return aBookFound;
     }
     
     
