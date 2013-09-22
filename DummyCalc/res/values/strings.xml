@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">DummyCalc</string>
+    <string name="action_settings">Settings</string>
+    <string name="lbl0">0</string>
+    <string name="lbl1">1</string>
+    <string name="lbl2">2</string>
+    <string name="lbl3">3</string>
+    <string name="lbl4">4</string>
+    <string name="lbl5">5</string>
+    <string name="lbl6">6</string>
+    <string name="lbl7">7</string>
+    <string name="lbl8">8</string>
+    <string name="lbl9">9</string>
+
+    <string name="lblPlus">+</string>
+    <string name="lblMin">-</string>
+    <string name="lblDiv">/</string>
+    <string name="lblMul">*</string>
+    <string name="lblEqual">=</string>
+    <string name="lblDot">.</string>
+    <string name="lblBrackets">( )</string>
+    <string name="lblC">C</string>
+    <string name="lblPosNeg">+/-</string>
+    <string name="lblCanc">&lt;-</string>        
+</resources>
